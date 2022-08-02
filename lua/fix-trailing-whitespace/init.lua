@@ -7,7 +7,7 @@
 local function tableHasKey(table,key)
     return table[key] ~= nil
 end
-
+print("here")
 local M = {}
 
 function M.setup(config)
@@ -16,6 +16,7 @@ function M.setup(config)
         return
     end
     if config then
+        print('config')
         M['backends'] = config['backends']
     end
     M['setup'] = 'done'
