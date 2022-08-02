@@ -16,7 +16,7 @@ function M.setup(config)
         return
     end
     if config then
-        M['backends'] = config['backend']
+        M['backends'] = config['backends']
     end
     M['setup'] = 'done'
     print("Setup completed")
