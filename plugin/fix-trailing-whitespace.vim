@@ -1,1 +1,1 @@
-lua require'fix-trailing-whitespace'.setup()
+lua require('fix-trailing-whitespace').setup()

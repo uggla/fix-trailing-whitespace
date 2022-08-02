@@ -2,7 +2,25 @@
 -- so that users of the plugin can configure it using this pattern:
 --
 -- require'myluamodule'.setup({p1 = "value1"})
-local function setup(parameters)
+-- local function setup(parameters)
+-- end
+local function tableHasKey(table,key)
+    return table[key] ~= nil
+end
+
+local M = {}
+
+function M.setup(config)
+    if M['setup'] == 'done' then
+        print("Setup already done.")
+        return
+    end
+    if config then
+        M['backends'] = config['backend']
+    end
+    M['setup'] = 'done'
+    print("Setup completed")
+
 end
 
 -- Since this function doesn't have a `local` qualifier, it will end up in the
@@ -36,15 +54,15 @@ end
 vim.api.nvim_create_user_command(
     'DoTheThing',
     function(input)
-        print "Something should happen here..."
+        print("Something should happen here...", M['setup'], M['backends'])
     end,
     {bang = true, desc = 'a new command to do the thing'}
 )
 
 -- This is a duplicate of the keymap created in the VimL file, demonstrating how to create a
 -- keymapping in Lua.
-vim.keymap.set('n', '<Tab>', local_lua_function, {desc = 'Run local_lua_function.', remap = true})
-print "coucou"
+-- vim.keymap.set('n', '<Tab>', local_lua_function, {desc = 'Run local_lua_function.', remap = true})
+-- print "coucou"
 
 -- Create a named autocmd group for autocmds so that if this file/plugin gets reloaded, the existing
 -- autocmd group will be cleared, and autocmds will be recreated, rather than being duplicated.
@@ -70,7 +88,8 @@ vim.api.nvim_create_autocmd('ColorScheme', {
 --    local myluamodule = require('myluamodule')
 --    myluamodule.local_lua_function()
 --    require'myluamodule'.setup({p1 = "value1"})
-return {
-    setup = setup,
-    local_lua_function = local_lua_function,
-}
+-- return {
+--     setup = setup,
+--     local_lua_function = local_lua_function,
+-- }
+return M
