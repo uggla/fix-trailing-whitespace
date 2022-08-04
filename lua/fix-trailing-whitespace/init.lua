@@ -24,6 +24,13 @@ function M.setup(config)
 
 end
 
+function M.check()
+    print("check")
+end
+
+M.check()
+M.check()
+M.setup()
 -- Since this function doesn't have a `local` qualifier, it will end up in the
 -- global namespace, and can be invoked from anywhere using:
 --
