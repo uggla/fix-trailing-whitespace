@@ -2,102 +2,92 @@
 -- so that users of the plugin can configure it using this pattern:
 --
 -- require'myluamodule'.setup({p1 = "value1"})
--- local function setup(parameters)
+-- local function setup(config)
 -- end
-local function tableHasKey(table,key)
-    return table[key] ~= nil
-end
-print("here")
 local M = {}
+local command = 'match ExtraWhitespace /\\'..[[\\@<![\u3000[:space:]]..']]'..[[\+$/]]
+local command_insert_mode = 'match ExtraWhitespace /\\'..[[\\@<![\u3000[:space:]]..']]'..[[\+\%#\@<!$/]]
+local remove_white_space_regexp = 's/\\' .. [[\\@<!\s\+$//]]
+-- print(command)
+-- print(command_insert_mode)
+-- print(remove_white_space_regexp)
 
+-- So far this function is a placceholder and not used.
 function M.setup(config)
-    if M['setup'] == 'done' then
-        print("Setup already done.")
-        return
-    end
     if config then
-        print('config')
-        M['backends'] = config['backends']
+        M['setup'] = 'done'
     end
-    M['setup'] = 'done'
-    print("Setup completed")
 
 end
 
-function M.check()
-    print("check")
+local function check_ignored_filetype()
+    if vim.g['extra_whitespace_ignored_filetypes']
+        then
+            -- print(vim.inspect(vim.g['extra_whitespace_ignored_filetypes']))
+            for _,ft in pairs(vim.g['extra_whitespace_ignored_filetypes'])
+            do
+                if ft == vim.bo.filetype then
+                    print('here')
+                    return(true)
+                end
+            end
+    end
+    return(false)
 end
 
-M.check()
-M.check()
-M.setup()
--- Since this function doesn't have a `local` qualifier, it will end up in the
--- global namespace, and can be invoked from anywhere using:
---
--- :lua global_lua_function()
---
--- Personally, I feel that kind of global namespace pollution should probably
--- be avoided in order to prevent other modules from accidentally clashing with
--- my function names. While `global_lua_function` seems kind of rare, if I had
--- a function called `connect` in my module, I would be more concerned. So I
--- normally try to follow the pattern demonstrated by `local_lua_function`. The
--- right choice might depend on your circumstances.
-function global_lua_function()
-    print "nvim-example-lua-plugin.myluamodule.init global_lua_function: hello"
+-- Define hightlight for trailing whitespace.
+local function set_hl()
+    vim.api.nvim_set_hl(0, 'ExtraWhitespace', {bg = 'darkred'})
 end
 
-local function unexported_local_function()
-    print "nvim-example-lua-plugin.myluamodule.init unexported_local_function: hello"
-end
+set_hl()
 
--- This function is qualified with `local`, so it's visibility is restricted to
--- this file. It is exported below in the return value from this module using a
--- Lua pattern that allows symbols to be selectively exported from a module by
--- adding them to a table that is returned from the file.
-local function local_lua_function()
-    print "nvim-example-lua-plugin.myluamodule.init local_lua_function: hello"
-end
-
--- Create a command, ':DoTheThing'
-vim.api.nvim_create_user_command(
-    'DoTheThing',
-    function(input)
-        print("Something should happen here...", M['setup'], M['backends'])
-    end,
-    {bang = true, desc = 'a new command to do the thing'}
-)
-
--- This is a duplicate of the keymap created in the VimL file, demonstrating how to create a
--- keymapping in Lua.
--- vim.keymap.set('n', '<Tab>', local_lua_function, {desc = 'Run local_lua_function.', remap = true})
--- print "coucou"
-
--- Create a named autocmd group for autocmds so that if this file/plugin gets reloaded, the existing
--- autocmd group will be cleared, and autocmds will be recreated, rather than being duplicated.
-local augroup = vim.api.nvim_create_augroup('highlight_cmds', {clear = true})
+-- Define a group for fix trailing whiespace autocmds.
+local augroup = vim.api.nvim_create_augroup('fix_trailing_whitespace', {clear = true})
 
 vim.api.nvim_create_autocmd('ColorScheme', {
-  pattern = 'rubber',
+  pattern = '*',
   group = augroup,
   -- There can be a 'command', or a 'callback'. A 'callback' will be a reference to a Lua function.
-  command = 'highlight String guifg=#FFEB95',
-  --callback = function()
+  -- command = 'highlight default ExtraWhitespace ctermbg=darkred guibg=darkred',
+  callback = set_hl
   --  vim.api.nvim_set_hl(0, 'String', {fg = '#FFEB95'})
   --end
 })
 
--- Returning a Lua table at the end allows fine control of the symbols that
--- will be available outside this file. Returning the table also allows the
--- importer to decide what name to use for this module in their own code.
---
--- Examples of how this module can be imported:
---    local mine = require('myluamodule')
---    mine.local_lua_function()
---    local myluamodule = require('myluamodule')
---    myluamodule.local_lua_function()
---    require'myluamodule'.setup({p1 = "value1"})
--- return {
---     setup = setup,
---     local_lua_function = local_lua_function,
--- }
+vim.api.nvim_create_autocmd({ 'BufRead', 'BufNew' }, {
+  pattern = '*',
+  group = augroup,
+  command = command,
+})
+
+vim.api.nvim_create_autocmd({ 'BufRead', 'BufNew' }, {
+  pattern = '*',
+  group = augroup,
+  callback = function()
+      print('before here')
+      check_ignored_filetype()
+  end
+})
+
+vim.api.nvim_create_autocmd({ 'InsertLeave' }, {
+  pattern = '*',
+  group = augroup,
+  command = command,
+})
+
+vim.api.nvim_create_autocmd({ 'InsertEnter' }, {
+  pattern = '*',
+  group = augroup,
+  command = command_insert_mode,
+})
+
+vim.api.nvim_create_user_command(
+    'FixWhitespace',
+    function(input)
+        vim.cmd(input.line1 .. ',' .. input.line2 .. remove_white_space_regexp)
+    end,
+    {bang = true, range = '%', desc = 'Command to remove trailing whitespaces'}
+)
+
 return M
